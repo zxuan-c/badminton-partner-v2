@@ -1,0 +1,376 @@
+<!doctype html>
+<html lang="zh-Hant">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>羽球雙打賽程播放器</title>
+  <meta name="theme-color" content="#0b0f14" />
+  <link rel="manifest" href="./manifest.webmanifest">
+  <link rel="apple-touch-icon" href="./assets/icon-512.png">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <style>
+    :root{
+      --bg:#0b0f14;
+      --card:#121923;
+      --text:#e6edf3;
+      --muted:#9fb1c1;
+      --accent:#5cc8ff;
+      --accent-2:#8affcc;
+      --danger:#ff6b6b;
+      --shadow:0 10px 30px rgba(0,0,0,.35);
+      --radius:18px;
+    }
+    *{box-sizing:border-box}
+    html,body{height:100%}
+    body{
+      margin:0; background:linear-gradient(180deg,#0b0f14 0%,#0f1520 100%);
+      color:var(--text); font-family: ui-sans-serif, system-ui, -apple-system, "PingFang TC", "Noto Sans TC", "Microsoft JhengHei", Segoe UI, Roboto, Helvetica, Arial, "Apple Color Emoji","Segoe UI Emoji";
+      display:flex; align-items:center; justify-content:center; padding:24px;
+    }
+    .app{width:min(1100px,100%);}
+    .grid{display:grid; grid-template-columns: 1.2fr .8fr; gap:20px}
+    @media (max-width: 920px){ .grid{grid-template-columns:1fr} }
+
+    .card{
+      background: linear-gradient(180deg, #121a26 0%, #0e1621 100%);
+      border:1px solid rgba(255,255,255,.06);
+      border-radius:var(--radius);
+      box-shadow:var(--shadow);
+    }
+    .card header{
+      display:flex; align-items:center; justify-content:space-between;
+      padding:18px 20px; border-bottom:1px solid rgba(255,255,255,.06);
+    }
+    .card header h2{margin:0; font-size:18px; letter-spacing:.5px; color:#cfe5ff}
+    .card .body{padding:18px;}
+
+    textarea{
+      width:100%; min-height:360px; resize:vertical;
+      background:#0b121b; color:var(--text); border:1px solid rgba(255,255,255,.08);
+      border-radius:12px; padding:14px; line-height:1.6; font-size:14px;
+      box-shadow: inset 0 0 0 2px rgba(255,255,255,.02);
+    }
+    .row{display:flex; gap:10px; flex-wrap:wrap; align-items:center}
+    .row > *{flex:1}
+    .btn{
+      cursor:pointer; user-select:none;
+      background: linear-gradient(180deg,#1a2533,#152031);
+      border:1px solid rgba(255,255,255,.08);
+      color:var(--text); padding:12px 14px; border-radius:12px; font-weight:700;
+      letter-spacing:.3px; transition:transform .06s ease, filter .2s ease, background .2s ease;
+    }
+    .btn:hover{filter:brightness(1.06)}
+    .btn:active{transform:translateY(1px)}
+    .btn.primary{
+      background: linear-gradient(180deg, #1d3247, #18293d);
+      border-color: rgba(92,200,255,.5);
+      box-shadow: 0 8px 20px rgba(92,200,255,.18);
+    }
+    .btn.secondary{
+      background: linear-gradient(180deg, #1a2c24, #16251f);
+      border-color: rgba(138,255,204,.4);
+      box-shadow: 0 8px 20px rgba(138,255,204,.15);
+    }
+    .btn.danger{
+      background: linear-gradient(180deg, #3a1d22, #2a1619);
+      border-color: rgba(255,107,107,.4);
+      box-shadow: 0 8px 20px rgba(255,107,107,.15);
+    }
+    .meta{display:flex; gap:12px; align-items:center; flex-wrap:wrap; color:var(--muted); font-size:14px}
+    .pill{
+      padding:6px 10px; border:1px solid rgba(255,255,255,.08);
+      border-radius:999px; background:#0a121a; color:#cfe5ff
+    }
+
+    .stage{
+      display:flex; flex-direction:column; align-items:center; justify-content:center;
+      gap:16px; padding:24px 20px 30px;
+      text-align:center;
+    }
+    .counter{font-size:14px; letter-spacing:.4px; color:var(--muted)}
+    .teams{
+      display:grid; gap:14px; width:100%;
+    }
+    .team{
+      display:grid; grid-template-columns:1fr auto 1fr; align-items:center; gap:10px;
+      background: linear-gradient(180deg,#0e1a26,#0c1621);
+      border:1px solid rgba(255,255,255,.06); border-radius:16px; padding:14px 16px;
+    }
+    .team .name{ font-size: clamp(20px, 4vw, 36px); font-weight:800; letter-spacing:.5px}
+    .vs{
+      font-weight:900; font-size: clamp(16px, 3vw, 22px); color:#a9c7ff; opacity:.9;
+      padding:8px 12px; border-radius:999px; border:1px dashed rgba(255,255,255,.15);
+    }
+    .players{ display:flex; gap:8px; align-items:center; justify-content:center; flex-wrap:wrap}
+    .badge{
+      padding:8px 12px; border-radius:999px;
+      background: linear-gradient(180deg,#21334a,#1c2a3f);
+      border:1px solid rgba(255,255,255,.08);
+      font-weight:800; letter-spacing:.4px; color:#eaf5ff
+    }
+    .progress{
+      width:100%; height:10px; border-radius:999px; background: #0a1219; overflow:hidden;
+      border:1px solid rgba(255,255,255,.06)
+    }
+    .progress > div{height:100%; width:0%; background: linear-gradient(90deg,var(--accent),var(--accent-2)); transition: width .25s ease}
+
+    .kbd{font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", monospace;
+      border:1px solid rgba(255,255,255,.2); border-bottom-width:2px; padding:.2em .5em; border-radius:6px; font-size:12px;
+    }
+    .foot{color:var(--muted); font-size:12px; text-align:center; padding:8px 0 0}
+    .right .body{display:flex; flex-direction:column; gap:12px}
+    .hint{font-size:13px; color:#cfe5ff; opacity:.8}
+
+    .switch{
+      display:inline-flex; align-items:center; gap:8px; font-size:14px; color:var(--muted);
+    }
+    .switch input{width:40px; height:22px; appearance:none; background:#152235; border-radius:999px; position:relative; outline:none; cursor:pointer; border:1px solid rgba(255,255,255,.08)}
+    .switch input::after{
+      content:""; width:18px; height:18px; position:absolute; top:1px; left:1px; border-radius:50%;
+      background:#e6edf3; transition:left .2s ease;
+    }
+    .switch input:checked{background:#1f3e5c}
+    .switch input:checked::after{ left:19px; }
+
+  </style>
+</head>
+<body>
+  <div class="app grid">
+    <section class="card left">
+      <header>
+        <h2>賽程舞台</h2>
+        <div class="meta">
+          <span class="pill" id="total-pill">共 0 場</span>
+          <span class="pill" id="persist-pill">已自動儲存</span>
+        </div>
+      </header>
+      <div class="body">
+        <div class="stage">
+          <div class="counter" id="counter">第 0 / 0 場</div>
+          <div class="teams" id="teams">
+            <!-- Teams render here -->
+          </div>
+          <div class="progress"><div id="bar"></div></div>
+          <div class="row" style="margin-top:12px">
+            <button class="btn" id="prevBtn">← 上一場（P）</button>
+            <button class="btn primary" id="nextBtn">下一場（N） →</button>
+          </div>
+          <div class="foot">
+            快捷鍵：<span class="kbd">N</span> 下一場、<span class="kbd">P</span> 上一場、<span class="kbd">R</span> 重置、<span class="kbd">S</span> 打散。
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <section class="card right">
+      <header>
+        <h2>賽程清單 / 設定</h2>
+        <div class="meta">
+          <label class="switch">
+            <input type="checkbox" id="persistToggle" checked>
+            自動儲存進度
+          </label>
+        </div>
+      </header>
+      <div class="body">
+        <textarea id="inputArea" spellcheck="false" placeholder="每一行一場，格式：A + B vs C + D"></textarea>
+        <div class="row">
+          <button class="btn secondary" id="loadBtn">載入賽程</button>
+          <button class="btn" id="shuffleBtn">隨機打散（S）</button>
+          <button class="btn danger" id="resetBtn">重置到第一場（R）</button>
+        </div>
+        <div class="hint">提示：可直接貼上「Judy + Jesha vs Lucas + Doris」這種格式。空白行自動忽略；多個空格、全形空格、奇怪的 <span class="kbd">vs</span> 大小寫都會自動修正。</div>
+      </div>
+    </section>
+  </div>
+
+  <script>
+    const inputArea = document.getElementById('inputArea');
+    const loadBtn = document.getElementById('loadBtn');
+    const shuffleBtn = document.getElementById('shuffleBtn');
+    const resetBtn = document.getElementById('resetBtn');
+    const nextBtn = document.getElementById('nextBtn');
+    const prevBtn = document.getElementById('prevBtn');
+    const teamsEl = document.getElementById('teams');
+    const counterEl = document.getElementById('counter');
+    const barEl = document.getElementById('bar');
+    const totalPill = document.getElementById('total-pill');
+    const persistToggle = document.getElementById('persistToggle');
+
+    const STORAGE_KEY = 'badminton-fixture-v2';
+    const DEFAULT_TEXT = [
+'Judy + Jesha vs Lucas + Doris',
+'Iris + Luna vs Mars + Soloman',
+'Iris + Soloman vs Lucas + Luna',
+'Mars + Judy vs Jesha + Doris',
+'Doris + Judy vs Luna + Jesha',
+'Iris + Lucas vs Soloman + Doris',
+'Jesha + Mars vs Judy + Lucas',
+'Luna + Soloman vs Iris + Doris',
+'Judy + Lucas vs Mars + Luna',
+'Jesha + Soloman vs Iris + Judy',
+'Lucas + Soloman vs Doris + Mars',
+'Iris + Doris vs Jesha + Luna',
+'Judy + Mars vs Lucas + Iris',
+'Luna + Doris vs Jesha + Soloman',
+'Mars + Soloman vs Judy + Doris',
+'Lucas + Luna vs Iris + Jesha',
+'Judy + Soloman vs Lucas + Mars',
+'Doris + Jesha vs Iris + Luna',
+'Soloman + Iris vs Judy + Luna',
+'Doris + Lucas vs Jesha + Mars',
+    ].join('\n');
+
+    let matches = [];
+    let idx = 0;
+
+    function save(){
+      if(!persistToggle.checked) return;
+      const data = { text: inputArea.value, idx };
+      localStorage.setItem(STORAGE_KEY, JSON.stringify(data));
+      document.getElementById('persist-pill').textContent = '已自動儲存';
+    }
+    function load(){
+      try{
+        const raw = localStorage.getItem(STORAGE_KEY);
+        if(raw){
+          const data = JSON.parse(raw);
+          inputArea.value = data.text || DEFAULT_TEXT;
+          idx = Number.isInteger(data.idx) ? data.idx : 0;
+        }else{
+          inputArea.value = DEFAULT_TEXT;
+        }
+      }catch(e){
+        inputArea.value = DEFAULT_TEXT;
+      }
+      parse();
+      render();
+    }
+
+    function normalizeVs(s){
+      const fwSpace = /[\u3000]/g;
+      s = s.replace(fwSpace,' ');
+      s = s.replace(/\s+/g,' ').trim();
+      s = s.replace(/\s*(?:vs\.?|VS\.?|Vs\.?|v\.|V\.|對|對上|對戰|vs：|vs:)\s*/g,' vs ');
+      const parts = s.split(/\s+vs\s+/i);
+      if(parts.length > 2){
+        s = parts[0] + ' vs ' + parts.slice(1).join(' & ');
+      }else if(parts.length === 2){
+        s = parts[0] + ' vs ' + parts[1];
+      }
+      return s;
+    }
+
+    function parseLine(line){
+      const norm = normalizeVs(line);
+      const [left,right] = norm.split(/\s+vs\s+/i);
+      if(!left || !right) return null;
+      const splitNames = t => t.split(/\s*\+\s*|、|，|,|＆|&/).map(x=>x.trim()).filter(Boolean);
+      const L = splitNames(left);
+      const R = splitNames(right);
+      if(L.length < 1 || R.length < 1) return null;
+      return { left: L, right: R, raw: norm };
+    }
+
+    function parse(){
+      const lines = inputArea.value.split(/\r?\n/).map(s=>s.trim()).filter(Boolean);
+      matches = [];
+      for(const ln of lines){
+        const m = parseLine(ln);
+        if(m) matches.push(m);
+      }
+      if(idx >= matches.length) idx = Math.max(0, matches.length - 1);
+      totalPill.textContent = `共 ${matches.length} 場`;
+      save();
+    }
+
+    function render(){
+      teamsEl.innerHTML = '';
+      if(matches.length === 0){
+        counterEl.textContent = '第 0 / 0 場';
+        barEl.style.width = '0%';
+        return;
+      }
+      const m = matches[idx];
+      counterEl.textContent = `第 ${idx+1} / ${matches.length} 場`;
+      const pct = ((idx+1) / matches.length) * 100;
+      barEl.style.width = pct.toFixed(1) + '%';
+
+      const makeBadges = (arr)=>{
+        const wrap = document.createElement('div');
+        wrap.className = 'players';
+        arr.forEach(name=>{
+          const b = document.createElement('span');
+          b.className = 'badge';
+          b.textContent = name;
+          wrap.appendChild(b);
+        });
+        return wrap;
+      };
+
+      const team = document.createElement('div');
+      team.className = 'team';
+      const left = document.createElement('div');
+      const vs = document.createElement('div');
+      const right = document.createElement('div');
+      left.className = 'name';
+      right.className = 'name';
+      vs.className = 'vs';
+      vs.textContent = 'VS';
+
+      left.appendChild(makeBadges(m.left));
+      right.appendChild(makeBadges(m.right));
+      team.appendChild(left);
+      team.appendChild(vs);
+      team.appendChild(right);
+      teamsEl.appendChild(team);
+    }
+
+    function next(){ if(matches.length){ idx = (idx+1) % matches.length; render(); save(); } }
+    function prev(){ if(matches.length){ idx = (idx-1+matches.length) % matches.length; render(); save(); } }
+    function reset(){ idx = 0; render(); save(); }
+    function shuffle(){
+      for(let i=matches.length-1;i>0;i--){
+        const j=Math.floor(Math.random()*(i+1));
+        [matches[i],matches[j]]=[matches[j],matches[i]];
+      }
+      idx = 0; render(); save();
+    }
+
+    loadBtn.addEventListener('click', ()=>{ parse(); render(); });
+    shuffleBtn.addEventListener('click', ()=>{ shuffle(); });
+    resetBtn.addEventListener('click', ()=>{ reset(); });
+    nextBtn.addEventListener('click', ()=>{ next(); });
+    prevBtn.addEventListener('click', ()=>{ prev(); });
+
+    inputArea.addEventListener('input', ()=>{ parse(); });
+
+    document.addEventListener('keydown',(e)=>{
+      if(e.key==='n' || e.key==='N'){ e.preventDefault(); next(); }
+      if(e.key==='p' || e.key==='P'){ e.preventDefault(); prev(); }
+      if(e.key==='r' || e.key==='R'){ e.preventDefault(); reset(); }
+      if(e.key==='s' || e.key==='S'){ e.preventDefault(); shuffle(); }
+    });
+
+    persistToggle.addEventListener('change', ()=> save());
+
+    // Init
+    (function init(){
+      const saved = localStorage.getItem('badminton-fixture-v2');
+      if(!saved){
+        // Preload default text on first run
+        document.getElementById('inputArea').value = DEFAULT_TEXT;
+      }
+      // iOS standalone status bar safe padding (rough)
+      const root = document.documentElement;
+      function updateSafe(){
+        const top = parseInt(getComputedStyle(root).getPropertyValue('env(safe-area-inset-top)')) || 0;
+        document.body.style.paddingTop = Math.max(16, top) + 'px';
+      }
+      try{ updateSafe(); }catch(e){}
+      load();
+    })();
+  </script>
+</body>
+</html>
